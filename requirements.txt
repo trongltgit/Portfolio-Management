@@ -9,4 +9,3 @@ yfinance==0.2.43
 reportlab==4.2.5
 flask==3.0.3
 gunicorn==22.0.0
-
