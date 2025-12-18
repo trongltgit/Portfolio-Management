@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: investment-ml-platform
+    env: python
+    plan: free
+
+    pythonVersion: 3.11.9
+
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: gunicorn app:app
