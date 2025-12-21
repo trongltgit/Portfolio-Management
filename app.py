@@ -68,7 +68,9 @@ def login():
             return redirect(url_for("dashboard"))
 
         flash("Invalid credentials", "danger")
-    return render_template("login.html")
+
+    return render_template_string(LOGIN_HTML)
+
 
 @app.route("/logout")
 def logout():
@@ -93,7 +95,9 @@ def admin():
 
     users = conn.execute("SELECT * FROM users").fetchall()
     conn.close()
-    return render_template("admin.html", users=users)
+
+    return render_template_string(ADMIN_HTML, users=users)
+
 
 # =====================================================
 # PART 2 – MARKET DATA ENGINE
@@ -296,6 +300,87 @@ def export_portfolio_pdf(username, portfolio: dict):
     buffer.seek(0)
     return buffer
 
+LOGIN_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <style>
+        body { font-family: Arial; background:#f4f6f8; }
+        .box { width:300px; margin:120px auto; padding:20px; background:#fff; border-radius:8px; }
+        input, button { width:100%; padding:10px; margin-top:10px; }
+        button { background:#2c7be5; color:white; border:none; cursor:pointer; }
+        .err { color:red; margin-top:10px; }
+    </style>
+</head>
+<body>
+<div class="box">
+<h3>Login</h3>
+<form method="post">
+    <input name="username" placeholder="Username" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <button type="submit">Login</button>
+</form>
+{% with msgs = get_flashed_messages(with_categories=true) %}
+{% for c,m in msgs %}
+<div class="err">{{ m }}</div>
+{% endfor %}
+{% endwith %}
+</div>
+</body>
+</html>
+"""
+
+DASHBOARD_HTML = """
+<h2>Dashboard</h2>
+<p>Welcome {{ user }}</p>
+<ul>
+    <li><a href="/market">Market</a></li>
+    <li><a href="/backtest">Backtest</a></li>
+    <li><a href="/logout">Logout</a></li>
+</ul>
+"""
+ADMIN_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin</title>
+    <style>
+        body { font-family: Arial; background:#f4f6f8; }
+        .box { width:600px; margin:40px auto; padding:20px; background:#fff; border-radius:8px; }
+        table { width:100%; border-collapse: collapse; margin-top:20px; }
+        th, td { border:1px solid #ddd; padding:8px; }
+        th { background:#eee; }
+    </style>
+</head>
+<body>
+<div class="box">
+<h3>Admin – User Management</h3>
+
+<form method="post">
+    <input name="username" placeholder="New username" required>
+    <button type="submit">Add user (default: Test@123)</button>
+</form>
+
+<table>
+<tr><th>ID</th><th>Username</th><th>Role</th></tr>
+{% for u in users %}
+<tr>
+    <td>{{ u.id }}</td>
+    <td>{{ u.username }}</td>
+    <td>{{ u.role }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<br>
+<a href="/logout">Logout</a>
+</div>
+</body>
+</html>
+"""
+
+
 # =====================================================
 # PART 7 – BUSINESS ROUTES
 # =====================================================
@@ -433,5 +518,6 @@ def export_pdf():
 
 if __name__ == "__main__":
     app.run()
+
 
 
