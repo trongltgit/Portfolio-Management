@@ -1,15 +1,8 @@
 from flask import render_template, request
 from . import market_bp
 from user.routes import login_required
-from .services import (
-    get_vcbf_nav,
-    get_stock_price,
-    get_vcbs_priceboard
-)
+from .services import get_vcbf_nav, get_stock_price, get_vcbs_priceboard
 
-# =========================
-# MARKET DASHBOARD
-# =========================
 @market_bp.route("/", methods=["GET", "POST"])
 @login_required
 def market_dashboard():
