@@ -4,6 +4,7 @@
 {% block content %}
 <h3>Alerts / Notifications</h3>
 
+{% if alerts %}
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
@@ -24,5 +25,8 @@
         {% endfor %}
     </tbody>
 </table>
+{% else %}
+<p>No alerts.</p>
+{% endif %}
 
 {% endblock %}
