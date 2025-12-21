@@ -1,0 +1,31 @@
+{% extends "user/base.html" %}
+{% block title %}Add Order{% endblock %}
+
+{% block content %}
+<h3>Add New Order</h3>
+<form method="post">
+    <div class="mb-3">
+        <label>Asset Type</label>
+        <select name="asset_type" class="form-select" required>
+            <option value="VCBF">VCBF</option>
+            <option value="STOCK">STOCK</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label>Asset Code</label>
+        <input type="text" name="asset_code" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label>Side</label>
+        <select name="side" class="form-select" required>
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label>Amount (VND)</label>
+        <input type="number" name="amount" class="form-control" required>
+    </div>
+    <button class="btn btn-success">Submit</button>
+</form>
+{% endblock %}
