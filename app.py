@@ -11,7 +11,6 @@ from user import user_bp
 from market import market_bp
 
 def create_app():
-    # CREATE FLASK APP INSTANCE
     app = Flask(__name__)
     app.config.from_object(Config)
 
@@ -34,15 +33,17 @@ def create_app():
     # -----------------------------
     @app.route("/")
     def index():
-        # Redirect root URL vào dashboard (hoặc vào market dashboard)
-        return redirect(url_for("dashboard"))
+        # Redirect root URL vào login page
+        return redirect(url_for("auth.login"))  # auth_bp phải có route /login với endpoint 'login'
 
     @app.route("/dashboard")
     def dashboard():
+        # Dashboard chỉ hiển thị sau khi login
         return "USER Dashboard – PART 4"
 
     @app.route("/admin")
     def admin():
+        # Admin dashboard
         return "ADMIN Dashboard – PART 3"
 
     return app
