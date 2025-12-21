@@ -62,6 +62,18 @@ def init_db():
         )
     """)
 
+    # NOTIFICATIONS / ALERTS
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            symbol TEXT,
+            change_pct REAL,
+            message TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
     conn.close()
 
