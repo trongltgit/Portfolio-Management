@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Market Data{% endblock %}
+
+{% block content %}
+<h3>Market Data</h3>
+
+<!-- ================= VCBF NAV ================= -->
+<h5>VCBF NAV</h5>
+<form method="post" class="row g-2">
+  <input type="hidden" name="type" value="vcbf">
+  <div class="col-md-4">
+    <select name="fund_code" class="form-select">
+      <option>VCBFTBF</option>
+      <option>VCBFMGF</option>
+      <option>VCBFBCF</option>
+      <option>VCBFFIF</option>
+      <option>VCBFAIF</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-primary">Get NAV</button>
+  </div>
+</form>
+
+{% if vcbf %}
+<p><b>{{ vcbf.fund }}</b> | NAV: {{ vcbf.nav }} | Date: {{ vcbf.date }}</p>
+{% endif %}
+
+<hr>
+
+<!-- ================= STOCK SEARCH ================= -->
+<h5>Stock Price (HOSE / HNX)</h5>
+<form method="post" class="row g-2">
+  <input type="hidden" name="type" value="stock">
+  <div class="col-md-3">
+    <input name="symbol" class="form-control" placeholder="Symbol (e.g. VCB)" required>
+  </div>
+  <div class="col-md-3">
+    <select name="exchange" class="form-select">
+      <option value="HOSE">HOSE</option>
+      <option value="HNX">HNX</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-primary">Search</button>
+  </div>
+</form>
+
+{% if stock %}
+<p>
+<b>{{ stock.symbol }}</b> ({{ stock.exchange }}) |
+Close: {{ stock.close }} | Date: {{ stock.date }}
+</p>
+{% endif %}
+
+<hr>
+
+<!-- ================= VCBS PRICEBOARD ================= -->
+<h5>VCBS Priceboard (Snapshot)</h5>
+<table class="table table-sm table-bordered w-50">
+<tr><th>Symbol</th><th>Price</th></tr>
+{% for r in priceboard %}
+<tr>
+  <td>{{ r.symbol }}</td>
+  <td>{{ r.price }}</td>
+</tr>
+{% endfor %}
+</table>
+
+{% endblock %}
