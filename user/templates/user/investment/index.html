@@ -1,0 +1,27 @@
+{% extends "user/base.html" %}
+{% block title %}Portfolio{% endblock %}
+
+{% block content %}
+<h3>Portfolio</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Asset Code</th>
+            <th>Type</th>
+            <th>Quantity</th>
+            <th>Avg Price</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for p in portfolio %}
+        <tr>
+            <td>{{ p.asset_code }}</td>
+            <td>{{ p.asset_type }}</td>
+            <td>{{ "%.4f"|format(p.quantity) }}</td>
+            <td>{{ "%.2f"|format(p.avg_price) }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<a href="{{ url_for('investment.add') }}" class="btn btn-primary">Add Order</a>
+{% endblock %}
