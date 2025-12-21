@@ -1,0 +1,28 @@
+{% extends "user/base.html" %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<h3>Alerts / Notifications</h3>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>Symbol</th>
+            <th>Change (%)</th>
+            <th>Message</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for n in alerts %}
+        <tr>
+            <td>{{ n.created_at }}</td>
+            <td>{{ n.symbol }}</td>
+            <td>{{ "%.2f"|format(n.change_pct) }}</td>
+            <td>{{ n.message }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
