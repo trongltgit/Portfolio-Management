@@ -1,16 +1,17 @@
 # app.py
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, render_template, session
 from config import Config
 from db import init_db, seed_admin
 
 # -----------------------------
 # IMPORT BLUEPRINTS
 # -----------------------------
-from auth import auth_bp
-from user import user_bp
-from market import market_bp
+from auth import auth_bp       # phải có route /login, /logout
+from user import user_bp       # các route user
+from market import market_bp   # các route market
 
 def create_app():
+    # CREATE FLASK APP INSTANCE
     app = Flask(__name__)
     app.config.from_object(Config)
 
@@ -29,22 +30,40 @@ def create_app():
     app.register_blueprint(market_bp) # /market/*
 
     # -----------------------------
-    # PLACEHOLDER ROUTES
+    # ROOT ROUTE
     # -----------------------------
     @app.route("/")
     def index():
         # Redirect root URL vào login page
-        return redirect(url_for("auth.login"))  # auth_bp phải có route /login với endpoint 'login'
+        return redirect(url_for("auth.login"))
 
-    @app.route("/dashboard")
+    # -----------------------------
+    # USER DASHBOARD
+    # -----------------------------
+    @app.route("/user/templates")
     def dashboard():
-        # Dashboard chỉ hiển thị sau khi login
-        return "USER Dashboard – PART 4"
+        if "user_id" not in session:
+            return redirect(url_for("auth.login"))
 
-    @app.route("/admin")
-    def admin():
-        # Admin dashboard
-        return "ADMIN Dashboard – PART 3"
+        # Chỉ cho phép user role 'user' truy cập
+        if session.get("role") != "user":
+            return "Access denied", 403
+
+        return render_template("dashboard.html")  # template user dashboard
+
+    # -----------------------------
+    # ADMIN DASHBOARD
+    # -----------------------------
+    @app.route("/admin/templates")
+    def admin_dashboard():
+        if "user_id" not in session:
+            return redirect(url_for("auth.login"))
+
+        # Chỉ cho phép user role 'admin' truy cập
+        if session.get("role") != "admin":
+            return "Access denied", 403
+
+        return render_template("dashboard.html")  # template admin dashboard
 
     return app
 
