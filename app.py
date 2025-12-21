@@ -6,12 +6,11 @@ from db import init_db, seed_admin
 # -----------------------------
 # IMPORT BLUEPRINTS
 # -----------------------------
-from auth import auth_bp       # phải có route /login, /logout
-from user import user_bp       # các route user
-from market import market_bp   # các route market
+from auth import auth_bp       # /login, /logout, /change-password
+from user import user_bp       # /user/*
+from market import market_bp   # /market/*
 
 def create_app():
-    # CREATE FLASK APP INSTANCE
     app = Flask(__name__)
     app.config.from_object(Config)
 
@@ -25,45 +24,46 @@ def create_app():
     # -----------------------------
     # REGISTER BLUEPRINTS
     # -----------------------------
-    app.register_blueprint(auth_bp)   # /login, /logout, /change-password
-    app.register_blueprint(user_bp)   # /user/*
-    app.register_blueprint(market_bp) # /market/*
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(user_bp)
+    app.register_blueprint(market_bp)
 
     # -----------------------------
     # ROOT ROUTE
     # -----------------------------
     @app.route("/")
     def index():
-        # Redirect root URL vào login page
-        return redirect(url_for("auth.login"))
+        # Nếu chưa login → login page
+        if "user_id" not in session:
+            return redirect(url_for("auth.login"))
+
+        # Redirect theo role
+        role = session.get("role")
+        if role == "admin":
+            return redirect(url_for("admin_dashboard"))
+        return redirect(url_for("user_dashboard"))
 
     # -----------------------------
     # USER DASHBOARD
     # -----------------------------
-    @app.route("/user/templates")
-    def dashboard():
+    @app.route("/dashboard")
+    def user_dashboard():
         if "user_id" not in session:
             return redirect(url_for("auth.login"))
-
-        # Chỉ cho phép user role 'user' truy cập
         if session.get("role") != "user":
             return "Access denied", 403
-
-        return render_template("dashboard.html")  # template user dashboard
+        return render_template("user/dashboard.html")
 
     # -----------------------------
     # ADMIN DASHBOARD
     # -----------------------------
-    @app.route("/admin/templates")
+    @app.route("/admin")
     def admin_dashboard():
         if "user_id" not in session:
             return redirect(url_for("auth.login"))
-
-        # Chỉ cho phép user role 'admin' truy cập
         if session.get("role") != "admin":
             return "Access denied", 403
-
-        return render_template("dashboard.html")  # template admin dashboard
+        return render_template("admin/dashboard.html")
 
     return app
 
