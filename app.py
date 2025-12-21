@@ -3,19 +3,15 @@ from flask import Flask
 from config import Config
 from db import init_db, seed_admin
 
-# IMPORT AUTH MODULE (PART 2)
+# -----------------------------
+# IMPORT BLUEPRINTS
+# -----------------------------
 from auth import auth_bp
-
 from user import user_bp
-app.register_blueprint(user_bp)
-
 from market import market_bp
-app.register_blueprint(market_bp)
-
-
-
 
 def create_app():
+    # CREATE FLASK APP INSTANCE
     app = Flask(__name__)
     app.config.from_object(Config)
 
@@ -29,11 +25,12 @@ def create_app():
     # -----------------------------
     # REGISTER BLUEPRINTS
     # -----------------------------
-    app.register_blueprint(auth_bp)
+    app.register_blueprint(auth_bp)   # /login, /logout, /change-password
+    app.register_blueprint(user_bp)   # /user/*
+    app.register_blueprint(market_bp) # /market/*
 
     # -----------------------------
-    # PLACEHOLDER ROUTES
-    # (PART 3+ sẽ thay thế)
+    # PLACEHOLDER ROUTES (can replace with real dashboards later)
     # -----------------------------
     @app.route("/dashboard")
     def dashboard():
@@ -45,10 +42,13 @@ def create_app():
 
     return app
 
-
+# -----------------------------
+# CREATE APP INSTANCE
+# -----------------------------
 app = create_app()
 
+# -----------------------------
+# RUN DEV SERVER
+# -----------------------------
 if __name__ == "__main__":
     app.run(debug=True)
-
-
