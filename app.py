@@ -1,12 +1,12 @@
 # =====================================================
-# PART 0 – CORE APP / CONFIG / DB (KHÔNG ĐỤNG)
+# PART 0 – CORE APP / CONFIG / DB (FIXED)
 # =====================================================
 import os
 import sqlite3
 from functools import wraps
 from flask import (
     Flask, request, redirect, url_for,
-    render_template, session, flash, abort
+    render_template_string, session, flash, abort
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -22,21 +22,36 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def init_db():
     conn = get_db()
     cur = conn.cursor()
+
+    # USERS
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
             password_hash TEXT,
-            role TEXT
+            role TEXT,
+            locked INTEGER DEFAULT 0
         )
     """)
+
+    # ADMIN LOGS
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS admin_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_id INTEGER,
+            action TEXT,
+            target_user TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
     conn.close()
 
-init_db()
 
 def seed_admin():
     conn = get_db()
@@ -48,7 +63,7 @@ def seed_admin():
 
     if not admin:
         cur.execute(
-            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+            "INSERT INTO users (username, password_hash, role, locked) VALUES (?, ?, ?, 0)",
             (
                 "admin",
                 generate_password_hash("Test@123"),
@@ -59,23 +74,10 @@ def seed_admin():
 
     conn.close()
 
+
+# INIT DB ON BOOT
+init_db()
 seed_admin()
-
-cur.execute("""
-    CREATE TABLE IF NOT EXISTS admin_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        admin_id INTEGER,
-        action TEXT,
-        target_user TEXT,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-""")
-
-# thêm cột lock nếu chưa có
-try:
-    cur.execute("ALTER TABLE users ADD COLUMN locked INTEGER DEFAULT 0")
-except sqlite3.OperationalError:
-    pass
 
 
 # =====================================================
@@ -671,6 +673,7 @@ def export_pdf():
 
 if __name__ == "__main__":
     app.run()
+
 
 
 
