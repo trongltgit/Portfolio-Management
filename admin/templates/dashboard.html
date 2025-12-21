@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<h3 class="mb-4">Admin Dashboard</h3>
+
+<!-- ADD USER -->
+<div class="card mb-4">
+    <div class="card-header fw-bold">Add User</div>
+    <div class="card-body">
+        <form method="post" class="row g-2">
+            <input type="hidden" name="action" value="add">
+
+            <div class="col-md-3">
+                <input class="form-control" name="username" placeholder="Username" required>
+            </div>
+
+            <div class="col-md-3">
+                <input type="password" class="form-control" name="password" placeholder="Password" required>
+            </div>
+
+            <div class="col-md-3">
+                <select name="role" class="form-select">
+                    <option value="user">User</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <button class="btn btn-primary w-100">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- SEARCH -->
+<form class="mb-3" method="get">
+    <div class="input-group">
+        <input name="q" value="{{ q or '' }}" class="form-control" placeholder="Search username...">
+        <button class="btn btn-outline-secondary">Search</button>
+    </div>
+</form>
+
+<!-- USERS TABLE -->
+<div class="card mb-4">
+    <div class="card-header fw-bold">Users</div>
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th width="260">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u.id }}</td>
+                <td>{{ u.username }}</td>
+                <td>{{ u.role }}</td>
+                <td>
+                    {% if u.locked %}
+                        <span class="badge bg-danger">LOCKED</span>
+                    {% else %}
+                        <span class="badge bg-success">ACTIVE</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if u.role != 'admin' %}
+                    <form method="post" class="d-inline">
+                        <input type="hidden" name="action" value="reset">
+                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                        <button class="btn btn-sm btn-warning">Reset</button>
+                    </form>
+
+                    <form method="post" class="d-inline">
+                        <input type="hidden" name="action"
+                               value="{{ 'unlock' if u.locked else 'lock' }}">
+                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                        <button class="btn btn-sm btn-secondary">
+                            {{ 'Unlock' if u.locked else 'Lock' }}
+                        </button>
+                    </form>
+
+                    <form method="post" class="d-inline"
+                          onsubmit="return confirm('Delete this user?');">
+                        <input type="hidden" name="action" value="confirm_delete">
+                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                        <button class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- PAGINATION -->
+<nav>
+    <ul class="pagination">
+        {% for p in range(1, total_pages + 1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+            <a class="page-link" href="?page={{ p }}{% if q %}&q={{ q }}{% endif %}">
+                {{ p }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</nav>
+
+{% endblock %}
