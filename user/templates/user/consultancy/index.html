@@ -1,0 +1,38 @@
+{% extends "user/base.html" %}
+{% block title %}Consultancy{% endblock %}
+
+{% block content %}
+<h3>AI Recommendations</h3>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Quantity</th>
+            <th>Avg Price</th>
+            <th>Current Price</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in recommendations %}
+        <tr>
+            <td>{{ r.symbol }}</td>
+            <td>{{ r.quantity }}</td>
+            <td>{{ r.avg_price }}</td>
+            <td>{{ r.current_price }}</td>
+            <td>
+                {% if r.action == 'BUY' %}
+                    <span class="badge bg-success">BUY</span>
+                {% elif r.action == 'SELL' %}
+                    <span class="badge bg-danger">SELL</span>
+                {% else %}
+                    <span class="badge bg-secondary">HOLD</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
