@@ -9,6 +9,10 @@ from auth import auth_bp
 from user import user_bp
 app.register_blueprint(user_bp)
 
+from market import market_bp
+app.register_blueprint(market_bp)
+
+
 
 
 def create_app():
@@ -46,4 +50,5 @@ app = create_app()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
