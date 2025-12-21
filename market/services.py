@@ -3,6 +3,25 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 
+from flask import render_template
+from . import market_bp
+from .services import (
+    get_vcbf_funds,
+    get_hose_index,
+    get_vcbs_priceboard
+)
+
+
+@market_bp.route("/")
+def market_dashboard():
+    return render_template(
+        "market/index.html",
+        vcbf=get_vcbf_funds(),
+        hose=get_hose_index(),
+        board=get_vcbs_priceboard()
+    )
+
+
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 # =========================
