@@ -1,0 +1,61 @@
+{% extends "user/base.html" %}
+{% block title %}Chart{% endblock %}
+
+{% block content %}
+<h3>Technical Chart</h3>
+
+<form method="post" class="row g-3 mb-3">
+    <div class="col-md-3">
+        <input type="text" name="symbol" class="form-control" placeholder="Symbol" value="{{ symbol }}">
+    </div>
+    <div class="col-md-3">
+        <select name="period" class="form-select">
+            <option value="1mo" {% if period=='1mo' %}selected{% endif %}>1 Month</option>
+            <option value="3mo" {% if period=='3mo' %}selected{% endif %}>3 Months</option>
+            <option value="6mo" {% if period=='6mo' %}selected{% endif %}>6 Months</option>
+            <option value="1y" {% if period=='1y' %}selected{% endif %}>1 Year</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-primary">Load</button>
+    </div>
+</form>
+
+<canvas id="chart" height="400"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    {% if data %}
+    const labels = {{ data|map(attribute='Date')|list|tojson }};
+    const close = {{ data|map(attribute='Close')|list|tojson }};
+    const macd = {{ data|map(attribute='MACD')|list|tojson }};
+    const signal = {{ data|map(attribute='Signal')|list|tojson }};
+    const rsi = {{ data|map(attribute='RSI')|list|tojson }};
+
+    const ctx = document.getElementById('chart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Close', data: close, borderColor: 'blue', yAxisID: 'y' },
+                { label: 'MACD', data: macd, borderColor: 'green', yAxisID: 'y1' },
+                { label: 'Signal', data: signal, borderColor: 'red', yAxisID: 'y1' },
+                { label: 'RSI', data: rsi, borderColor: 'purple', yAxisID: 'y2' }
+            ]
+        },
+        options: {
+            interaction: { mode: 'index', intersect: false },
+            stacked: false,
+            plugins: { legend: { display: true } },
+            scales: {
+                y: { type: 'linear', position: 'left', title: { display: true, text: 'Price' } },
+                y1: { type: 'linear', position: 'right', title: { display: true, text: 'MACD' } },
+                y2: { type: 'linear', position: 'right', title: { display: true, text: 'RSI' }, grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+    {% endif %}
+</script>
+
+{% endblock %}
