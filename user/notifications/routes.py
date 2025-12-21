@@ -10,6 +10,7 @@ def index():
     if not user_id:
         return "Unauthorized", 401
 
+    # Lấy alerts mới nhất
     conn = get_db()
     alerts = conn.execute(
         "SELECT * FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 50",
