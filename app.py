@@ -79,7 +79,7 @@ except sqlite3.OperationalError:
 
 
 # =====================================================
-# PART 1 – AUTH / ADMIN (KHÔNG ĐỤNG)
+# PART 1 – AUTH / ADMIN (FIXED)
 # =====================================================
 def login_required(f):
     @wraps(f)
@@ -88,6 +88,7 @@ def login_required(f):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return wrapper
+
 
 def log_admin_action(admin_id, action, target_user):
     conn = get_db()
@@ -112,25 +113,26 @@ def login():
         ).fetchone()
         conn.close()
 
-        if user and check_password_hash(user["password_hash"], password):
-            session["user_id"] = user["id"]
-            session["role"] = user["role"]
-            return redirect(url_for("dashboard"))
-
-        flash("Invalid credentials", "danger")
+        if user:
+            if user["locked"]:
+                flash("Account is locked. Contact admin.", "danger")
+            elif check_password_hash(user["password_hash"], password):
+                session["user_id"] = user["id"]
+                session["role"] = user["role"]
+                return redirect(url_for("dashboard"))
+            else:
+                flash("Invalid credentials", "danger")
+        else:
+            flash("Invalid credentials", "danger")
 
     return render_template_string(LOGIN_HTML)
-
-    if user and user["locked"]:
-        flash("Account is locked. Contact admin.", "danger")
-        return render_template_string(LOGIN_HTML)
-
 
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
+
 
 @app.route("/admin", methods=["GET", "POST"])
 @login_required
@@ -141,8 +143,10 @@ def admin():
     conn = get_db()
     admin_id = session["user_id"]
 
-    # ===== ADD USER =====
-    if request.method == "POST" and request.form.get("action") == "add":
+    action = request.form.get("action")
+
+    # ADD USER
+    if request.method == "POST" and action == "add":
         username = request.form["username"].strip()
         try:
             conn.execute(
@@ -151,12 +155,12 @@ def admin():
             )
             conn.commit()
             log_admin_action(admin_id, "ADD_USER", username)
-            flash("User added (default: Test@123)", "success")
+            flash("User added (default password: Test@123)", "success")
         except sqlite3.IntegrityError:
-            flash("Username exists", "danger")
+            flash("Username already exists", "danger")
 
-    # ===== RESET PASSWORD =====
-    if request.method == "POST" and request.form.get("action") == "reset":
+    # RESET PASSWORD
+    if request.method == "POST" and action == "reset":
         uid = request.form["user_id"]
         conn.execute(
             "UPDATE users SET password_hash=? WHERE id=?",
@@ -164,10 +168,10 @@ def admin():
         )
         conn.commit()
         log_admin_action(admin_id, "RESET_PASSWORD", uid)
-        flash("Password reset", "warning")
+        flash("Password reset to Test@123", "warning")
 
-    # ===== CHANGE PASSWORD =====
-    if request.method == "POST" and request.form.get("action") == "change_pass":
+    # CHANGE PASSWORD
+    if request.method == "POST" and action == "change_pass":
         uid = request.form["user_id"]
         new_pass = request.form["new_password"]
         conn.execute(
@@ -178,33 +182,30 @@ def admin():
         log_admin_action(admin_id, "CHANGE_PASSWORD", uid)
         flash("Password changed", "success")
 
-    # ===== LOCK / UNLOCK USER =====
-    if request.method == "POST" and request.form.get("action") == "lock":
+    # LOCK / UNLOCK
+    if request.method == "POST" and action == "lock":
         uid = request.form["user_id"]
         conn.execute("UPDATE users SET locked=1 WHERE id=?", (uid,))
         conn.commit()
         log_admin_action(admin_id, "LOCK_USER", uid)
         flash("User locked", "danger")
 
-    if request.method == "POST" and request.form.get("action") == "unlock":
+    if request.method == "POST" and action == "unlock":
         uid = request.form["user_id"]
         conn.execute("UPDATE users SET locked=0 WHERE id=?", (uid,))
         conn.commit()
         log_admin_action(admin_id, "UNLOCK_USER", uid)
         flash("User unlocked", "success")
 
-    # ===== DELETE USER – STEP 1 CONFIRM =====
-    if request.method == "POST" and request.form.get("action") == "confirm_delete":
+    # DELETE STEP 1 – CONFIRM
+    if request.method == "POST" and action == "confirm_delete":
         uid = request.form["user_id"]
         user = conn.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
         conn.close()
-        return render_template_string(
-            DELETE_CONFIRM_HTML,
-            user=user
-        )
+        return render_template_string(DELETE_CONFIRM_HTML, user=user)
 
-    # ===== DELETE USER – FINAL =====
-    if request.method == "POST" and request.form.get("action") == "delete":
+    # DELETE FINAL
+    if request.method == "POST" and action == "delete":
         uid = request.form["user_id"]
         conn.execute("DELETE FROM users WHERE id=? AND role!='admin'", (uid,))
         conn.commit()
@@ -215,32 +216,10 @@ def admin():
     logs = conn.execute(
         "SELECT * FROM admin_logs ORDER BY timestamp DESC LIMIT 50"
     ).fetchall()
-
     conn.close()
+
     return render_template_string(ADMIN_HTML, users=users, logs=logs)
-  
 
-
-<form method="post">
-  <input type="hidden" name="action" value="confirm_delete">
-  <input type="hidden" name="user_id" value="{{ u.id }}">
-  <button>Delete</button>
-</form>
-
-
-<form method="post">
-  <input type="hidden" name="action" value="{{ 'unlock' if u.locked else 'lock' }}">
-  <input type="hidden" name="user_id" value="{{ u.id }}">
-  <button>{{ 'Unlock' if u.locked else 'Lock' }}</button>
-</form>
-
-
-<form method="post">
-  <input type="hidden" name="action" value="change_pass">
-  <input type="hidden" name="user_id" value="{{ u.id }}">
-  <input name="new_password" placeholder="New password" required>
-  <button>Change</button>
-</form>
 
 
 
@@ -692,6 +671,7 @@ def export_pdf():
 
 if __name__ == "__main__":
     app.run()
+
 
 
 
