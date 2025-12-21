@@ -21,8 +21,7 @@ def check_price_alerts(user_id, threshold_pct=2.0):
         change_pct = ((current_price - asset['avg_price']) / asset['avg_price']) * 100
 
         if abs(change_pct) >= threshold_pct:
-            action = "ALERT"
-            message = f"{symbol} changed {change_pct:.2f}% from avg price {asset['avg_price']:.0f} → current {current_price:.0f}"
+            message = f"{symbol} changed {change_pct:.2f}% from avg {asset['avg_price']:.0f} → current {current_price:.0f}"
 
             # Lưu vào DB
             conn = get_db()
