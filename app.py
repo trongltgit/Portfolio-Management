@@ -6,6 +6,10 @@ from db import init_db, seed_admin
 # IMPORT AUTH MODULE (PART 2)
 from auth import auth_bp
 
+from user import user_bp
+app.register_blueprint(user_bp)
+
+
 
 def create_app():
     app = Flask(__name__)
@@ -42,3 +46,4 @@ app = create_app()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
