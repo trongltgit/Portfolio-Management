@@ -38,6 +38,46 @@ def init_db():
 
 init_db()
 
+def seed_admin():
+    conn = get_db()
+    cur = conn.cursor()
+
+    admin = cur.execute(
+        "SELECT * FROM users WHERE username='admin'"
+    ).fetchone()
+
+    if not admin:
+        cur.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+            (
+                "admin",
+                generate_password_hash("Test@123"),
+                "admin"
+            )
+        )
+        conn.commit()
+
+    conn.close()
+
+seed_admin()
+
+cur.execute("""
+    CREATE TABLE IF NOT EXISTS admin_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        admin_id INTEGER,
+        action TEXT,
+        target_user TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+""")
+
+# thêm cột lock nếu chưa có
+try:
+    cur.execute("ALTER TABLE users ADD COLUMN locked INTEGER DEFAULT 0")
+except sqlite3.OperationalError:
+    pass
+
+
 # =====================================================
 # PART 1 – AUTH / ADMIN (KHÔNG ĐỤNG)
 # =====================================================
@@ -48,6 +88,16 @@ def login_required(f):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return wrapper
+
+def log_admin_action(admin_id, action, target_user):
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO admin_logs (admin_id, action, target_user) VALUES (?, ?, ?)",
+        (admin_id, action, target_user)
+    )
+    conn.commit()
+    conn.close()
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -71,6 +121,11 @@ def login():
 
     return render_template_string(LOGIN_HTML)
 
+    if user and user["locked"]:
+        flash("Account is locked. Contact admin.", "danger")
+        return render_template_string(LOGIN_HTML)
+
+
 
 @app.route("/logout")
 def logout():
@@ -84,19 +139,109 @@ def admin():
         abort(403)
 
     conn = get_db()
-    if request.method == "POST":
-        username = request.form["username"]
-        password = generate_password_hash("Test@123")
+    admin_id = session["user_id"]
+
+    # ===== ADD USER =====
+    if request.method == "POST" and request.form.get("action") == "add":
+        username = request.form["username"].strip()
+        try:
+            conn.execute(
+                "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                (username, generate_password_hash("Test@123"), "user")
+            )
+            conn.commit()
+            log_admin_action(admin_id, "ADD_USER", username)
+            flash("User added (default: Test@123)", "success")
+        except sqlite3.IntegrityError:
+            flash("Username exists", "danger")
+
+    # ===== RESET PASSWORD =====
+    if request.method == "POST" and request.form.get("action") == "reset":
+        uid = request.form["user_id"]
         conn.execute(
-            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-            (username, password, "user")
+            "UPDATE users SET password_hash=? WHERE id=?",
+            (generate_password_hash("Test@123"), uid)
         )
         conn.commit()
+        log_admin_action(admin_id, "RESET_PASSWORD", uid)
+        flash("Password reset", "warning")
+
+    # ===== CHANGE PASSWORD =====
+    if request.method == "POST" and request.form.get("action") == "change_pass":
+        uid = request.form["user_id"]
+        new_pass = request.form["new_password"]
+        conn.execute(
+            "UPDATE users SET password_hash=? WHERE id=?",
+            (generate_password_hash(new_pass), uid)
+        )
+        conn.commit()
+        log_admin_action(admin_id, "CHANGE_PASSWORD", uid)
+        flash("Password changed", "success")
+
+    # ===== LOCK / UNLOCK USER =====
+    if request.method == "POST" and request.form.get("action") == "lock":
+        uid = request.form["user_id"]
+        conn.execute("UPDATE users SET locked=1 WHERE id=?", (uid,))
+        conn.commit()
+        log_admin_action(admin_id, "LOCK_USER", uid)
+        flash("User locked", "danger")
+
+    if request.method == "POST" and request.form.get("action") == "unlock":
+        uid = request.form["user_id"]
+        conn.execute("UPDATE users SET locked=0 WHERE id=?", (uid,))
+        conn.commit()
+        log_admin_action(admin_id, "UNLOCK_USER", uid)
+        flash("User unlocked", "success")
+
+    # ===== DELETE USER – STEP 1 CONFIRM =====
+    if request.method == "POST" and request.form.get("action") == "confirm_delete":
+        uid = request.form["user_id"]
+        user = conn.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+        conn.close()
+        return render_template_string(
+            DELETE_CONFIRM_HTML,
+            user=user
+        )
+
+    # ===== DELETE USER – FINAL =====
+    if request.method == "POST" and request.form.get("action") == "delete":
+        uid = request.form["user_id"]
+        conn.execute("DELETE FROM users WHERE id=? AND role!='admin'", (uid,))
+        conn.commit()
+        log_admin_action(admin_id, "DELETE_USER", uid)
+        flash("User deleted", "danger")
 
     users = conn.execute("SELECT * FROM users").fetchall()
-    conn.close()
+    logs = conn.execute(
+        "SELECT * FROM admin_logs ORDER BY timestamp DESC LIMIT 50"
+    ).fetchall()
 
-    return render_template_string(ADMIN_HTML, users=users)
+    conn.close()
+    return render_template_string(ADMIN_HTML, users=users, logs=logs)
+  
+
+
+<form method="post">
+  <input type="hidden" name="action" value="confirm_delete">
+  <input type="hidden" name="user_id" value="{{ u.id }}">
+  <button>Delete</button>
+</form>
+
+
+<form method="post">
+  <input type="hidden" name="action" value="{{ 'unlock' if u.locked else 'lock' }}">
+  <input type="hidden" name="user_id" value="{{ u.id }}">
+  <button>{{ 'Unlock' if u.locked else 'Lock' }}</button>
+</form>
+
+
+<form method="post">
+  <input type="hidden" name="action" value="change_pass">
+  <input type="hidden" name="user_id" value="{{ u.id }}">
+  <input name="new_password" placeholder="New password" required>
+  <button>Change</button>
+</form>
+
 
 
 # =====================================================
@@ -357,6 +502,20 @@ ADMIN_HTML = """
 <div class="box">
 <h3>Admin – User Management</h3>
 
+<h4>Admin Logs</h4>
+<table>
+<tr><th>Time</th><th>Admin</th><th>Action</th><th>Target</th></tr>
+{% for l in logs %}
+<tr>
+  <td>{{ l.timestamp }}</td>
+  <td>{{ l.admin_id }}</td>
+  <td>{{ l.action }}</td>
+  <td>{{ l.target_user }}</td>
+</tr>
+{% endfor %}
+</table>
+
+
 <form method="post">
     <input name="username" placeholder="New username" required>
     <button type="submit">Add user (default: Test@123)</button>
@@ -379,6 +538,21 @@ ADMIN_HTML = """
 </body>
 </html>
 """
+
+
+DELETE_CONFIRM_HTML = """
+<h3>Confirm delete</h3>
+<p>Delete user: <b>{{ user.username }}</b>?</p>
+
+<form method="post">
+  <input type="hidden" name="action" value="delete">
+  <input type="hidden" name="user_id" value="{{ user.id }}">
+  <button style="color:red">YES – DELETE</button>
+</form>
+
+<a href="/admin">Cancel</a>
+"""
+
 
 
 # =====================================================
@@ -518,6 +692,7 @@ def export_pdf():
 
 if __name__ == "__main__":
     app.run()
+
 
 
 
