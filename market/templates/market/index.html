@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Market Data{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Market Data</h2>
+
+<!-- HOSE -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h5>HOSE Index</h5>
+    <p class="fs-4">
+        VNINDEX: {{ hose.VNINDEX }}
+        <span class="text-success">{{ hose.CHANGE }}</span>
+    </p>
+  </div>
+</div>
+
+<!-- VCBF -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h5>VCBF Funds</h5>
+    <table class="table table-bordered">
+      <tr>
+        <th>Fund</th><th>NAV</th><th>Change</th>
+      </tr>
+      {% for f in vcbf %}
+      <tr>
+        <td>{{ f.code }}</td>
+        <td>{{ f.nav }}</td>
+        <td>{{ f.change }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+<!-- VCBS -->
+<div class="card">
+  <div class="card-body">
+    <h5>VCBS Priceboard</h5>
+    <table class="table table-striped">
+      <tr>
+        <th>Symbol</th><th>Price</th><th>Change</th>
+      </tr>
+      {% for s in board %}
+      <tr>
+        <td>{{ s.symbol }}</td>
+        <td>{{ s.price }}</td>
+        <td>{{ s.change }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}
