@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask
+from flask import Flask, redirect, url_for
 from config import Config
 from db import init_db, seed_admin
 
@@ -30,8 +30,13 @@ def create_app():
     app.register_blueprint(market_bp) # /market/*
 
     # -----------------------------
-    # PLACEHOLDER ROUTES (can replace with real dashboards later)
+    # PLACEHOLDER ROUTES
     # -----------------------------
+    @app.route("/")
+    def index():
+        # Redirect root URL vào dashboard (hoặc vào market dashboard)
+        return redirect(url_for("dashboard"))
+
     @app.route("/dashboard")
     def dashboard():
         return "USER Dashboard – PART 4"
